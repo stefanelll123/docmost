@@ -24,6 +24,7 @@ import { VerifyUserTokenDto } from './dto/verify-user-token.dto';
 import { FastifyReply } from 'fastify';
 import { validateSsoEnforcement } from './auth.util';
 import { ModuleRef } from '@nestjs/core';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -34,6 +35,24 @@ export class AuthController {
     private environmentService: EnvironmentService,
     private moduleRef: ModuleRef,
   ) {}
+
+  @HttpCode(HttpStatus.OK)
+  @Post('register')
+  async register(
+    @AuthWorkspace() workspace: Workspace,
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Body() createUserDto: CreateUserDto, // reuse CreateAdminUserDto for name, email, password
+  ) {
+    // Validate email domain
+    if (!createUserDto.email.endsWith('upb.ro')) {
+      return res.status(HttpStatus.BAD_REQUEST).send({
+        message: 'Only emails ending with .upb.ro are allowed.'
+      });
+    }
+    // Register user as a member (not admin, not in any group)
+    const authToken = await this.authService.register(createUserDto, workspace.id);
+    this.setAuthCookie(res, authToken);
+  }
 
   @HttpCode(HttpStatus.OK)
   @Post('login')

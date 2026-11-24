@@ -10,6 +10,8 @@ WORKDIR /app
 COPY . .
 
 RUN pnpm install --frozen-lockfile
+# Increase Node.js memory limit for build
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN pnpm build
 
 FROM base AS installer

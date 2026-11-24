@@ -1,14 +1,24 @@
 services:
   docmost:
-    image: docmost/docmost:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       - db
       - redis
     environment:
       APP_URL: 'http://localhost:3000'
-      APP_SECRET: 'REPLACE_WITH_LONG_SECRET'
+      APP_SECRET: '1cc120cf60635eb7becce9121fbe51642b1021d97246f12fd748c3065c8433ea'
       DATABASE_URL: 'postgresql://docmost:STRONG_DB_PASSWORD@db:5432/docmost'
       REDIS_URL: 'redis://redis:6379'
+      MAIL_DRIVER: smtp
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: "587"
+      SMTP_USERNAME: ipdocmost.noreply@gmail.com
+      SMTP_PASSWORD: aaxcqmovytfhtbcj
+      SMTP_SECURE: "false"
+      MAIL_FROM_ADDRESS: ipdocmost.noreply@gmail.com
+      MAIL_FROM_NAME: IP Docmost Development
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -21,6 +31,8 @@ services:
       POSTGRES_DB: docmost
       POSTGRES_USER: docmost
       POSTGRES_PASSWORD: STRONG_DB_PASSWORD
+    ports:
+      - "5432:5432"
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/postgresql

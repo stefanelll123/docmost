@@ -28,6 +28,8 @@ import { RESET } from "jotai/utils";
 import { useTranslation } from "react-i18next";
 import { isCloud } from "@/lib/config.ts";
 import { exchangeTokenRedirectUrl } from "@/ee/utils.ts";
+import { register } from "@/features/auth/services/auth-service";
+import { IRegisterManually } from "@/features/auth/types/auth.types";
 
 export default function useAuth() {
   const { t } = useTranslation();
@@ -53,6 +55,24 @@ export default function useAuth() {
     } catch (err) {
       setIsLoading(false);
       console.log(err);
+      notifications.show({
+        message: err.response?.data.message,
+        color: "red",
+      });
+    }
+  };
+
+  const handleSignUp = async (data: IRegisterManually) => {
+    setIsLoading(true);
+    try {
+      await register(data);
+      setIsLoading(false);
+      notifications.show({
+        message: t("Account created successfully. Please log in."),
+      });
+      navigate(APP_ROUTE.AUTH.LOGIN);
+    } catch (err) {
+      setIsLoading(false);
       notifications.show({
         message: err.response?.data.message,
         color: "red",
@@ -187,6 +207,7 @@ export default function useAuth() {
 
   return {
     signIn: handleSignIn,
+    signUp: handleSignUp,
     invitationSignup: handleInvitationSignUp,
     setupWorkspace: handleSetupWorkspace,
     forgotPassword: handleForgotPassword,

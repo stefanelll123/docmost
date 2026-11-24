@@ -101,6 +101,17 @@ export function LoginForm() {
                 </Anchor>
               </Group>
 
+              <Group justify="flex-end" mt="sm">
+                <Anchor
+                  to={APP_ROUTE.AUTH.REGISTER}
+                  component={Link}
+                  underline="never"
+                  size="sm"
+                >
+                  {t("Don't have an account?")}
+                </Anchor>
+              </Group>
+
               <Button type="submit" fullWidth mt="md" loading={isLoading}>
                 {t("Sign In")}
               </Button>

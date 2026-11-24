@@ -10,6 +10,7 @@ import {
 } from '@docmost/db/types/entity.types';
 import { PaginationOptions } from '../../pagination/pagination-options';
 import { MemberInfo, UserSpaceRole } from './types';
+import { SpaceVisibility, SpaceRole } from '../../../common/helpers/types/permission';
 import { executeWithCursorPagination } from '@docmost/db/pagination/cursor-pagination';
 import { GroupRepo } from '@docmost/db/repos/group/group.repo';
 import { SpaceRepo } from '@docmost/db/repos/space/space.repo';
@@ -219,6 +220,15 @@ export class SpaceMemberRepo {
       .execute();
 
     if (!roles || roles.length === 0) {
+      // Check if space is open
+      const space = await this.db
+        .selectFrom('spaces')
+        .select(['visibility'])
+        .where('id', '=', spaceId)
+        .executeTakeFirst();
+      if (space && space.visibility === SpaceVisibility.OPEN) {
+        return [{ userId, role: SpaceRole.READER }];
+      }
       return undefined;
     }
     return roles;
@@ -280,12 +290,27 @@ export class SpaceMemberRepo {
   }
 
   async getUserSpaces(userId: string, pagination: PaginationOptions) {
-    let query = this.db
+    // Get spaces where user is a member
+    const memberSpacesQuery = this.db
       .selectFrom('spaces')
       .selectAll()
       .select((eb) => [this.spaceRepo.withMemberCount(eb)])
+      .select(sql`0`.as('is_public_order'))
       .where('id', 'in', this.getUserSpaceIdsQuery(userId));
 
+    // Get public spaces (not already in memberSpaces)
+    const publicSpacesQuery = this.db
+      .selectFrom('spaces')
+      .selectAll()
+      .select((eb) => [this.spaceRepo.withMemberCount(eb)])
+      .select(sql`1`.as('is_public_order'))
+      .where('visibility', '=', 'open')
+      .where('id', 'not in', this.getUserSpaceIdsQuery(userId));
+
+    // Combine queries using UNION ALL
+    let query = memberSpacesQuery.unionAll(publicSpacesQuery);
+
+    // Apply search filter if needed
     if (pagination.query) {
       query = query.where((eb) =>
         eb(
@@ -300,12 +325,17 @@ export class SpaceMemberRepo {
       );
     }
 
+    // Order public spaces first using the computed column
+    query = query.orderBy('is_public_order', 'desc').orderBy('id', 'asc');
+
     return executeWithCursorPagination(query, {
       perPage: pagination.limit,
       cursor: pagination.cursor,
       beforeCursor: pagination.beforeCursor,
-      fields: [{ expression: 'id', direction: 'asc' }],
-      parseCursor: (cursor) => ({ id: cursor.id }),
+      fields: [
+        { expression: 'id', direction: 'asc' }
+      ],
+      parseCursor: (cursor: any) => ({ id: (cursor as any).id }),
     });
   }
 }

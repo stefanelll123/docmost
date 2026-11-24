@@ -1,0 +1,46 @@
+services:
+  docmost:
+    image: stefanelll123/docmost:latest
+    depends_on:
+      - db
+      - redis
+    environment:
+      APP_URL: 'https://ip.dataecho.ro'
+      APP_SECRET: '1cc120cf60635eb7becce9121fbe51642b1021d97246f12fd748c3065c8433ea'
+      DATABASE_URL: 'postgresql://docmost:zfMK9tkvkbBIE7SNq9liyTtiQNUcbhbHIvhtCEn4@db:5432/docmost'
+      REDIS_URL: 'redis://redis:6379'
+      MAIL_DRIVER: smtp
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: "587"
+      SMTP_USERNAME: ipdocmost.noreply@gmail.com
+      SMTP_PASSWORD: aaxcqmovytfhtbcj
+      SMTP_SECURE: "false"
+      MAIL_FROM_ADDRESS: ipdocmost.noreply@gmail.com
+      MAIL_FROM_NAME: IP Docmost
+      FILE_UPLOAD_SIZE_LIMIT: 5mb
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - docmost:/app/data/storage
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: docmost
+      POSTGRES_USER: docmost
+      POSTGRES_PASSWORD: zfMK9tkvkbBIE7SNq9liyTtiQNUcbhbHIvhtCEn4
+    restart: unless-stopped
+    volumes:
+      - /server/docmost-postgress-data:/var/lib/postgresql
+
+  redis:
+    image: redis:8
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+volumes:
+  docmost:
+  redis_data:

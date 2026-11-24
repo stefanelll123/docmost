@@ -9,6 +9,12 @@ export interface IRegister {
   password: string;
 }
 
+export interface IRegisterManually {
+  name: string;
+  email: string;
+  password: string;
+}
+
 export interface ISetupWorkspace {
   workspaceName?: string;
   name: string;

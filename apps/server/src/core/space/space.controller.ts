@@ -25,6 +25,7 @@ import {
   SpaceCaslAction,
   SpaceCaslSubject,
 } from '../casl/interfaces/space-ability.type';
+import { SpaceVisibility } from '../../common/helpers/types/permission';
 import { UpdateSpaceDto } from './dto/update-space.dto';
 import { findHighestUserSpaceRole } from '@docmost/db/repos/space/utils';
 import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
@@ -73,7 +74,7 @@ export class SpaceController {
     }
 
     const ability = await this.spaceAbility.createForUser(user, space.id);
-    if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Settings)) {
+    if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Settings) && space.visibility !== SpaceVisibility.OPEN) {
       throw new ForbiddenException();
     }
 
@@ -102,7 +103,7 @@ export class SpaceController {
   ) {
     const ability = this.workspaceAbility.createForUser(user, workspace);
     if (
-      ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Space)
+      ability.cannot(WorkspaceCaslAction.Create, WorkspaceCaslSubject.Space)
     ) {
       throw new ForbiddenException();
     }

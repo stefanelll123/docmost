@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { IconArrowRight } from "@tabler/icons-react";
 import { CustomAvatar } from "@/components/ui/custom-avatar.tsx";
 import { AvatarIconType } from "@/features/attachments/types/attachment.types.ts";
+import CreateSpaceModal from "@/features/space/components/create-space-modal.tsx";
 
 export default function SpaceGrid() {
   const { t } = useTranslation();
@@ -39,9 +40,16 @@ export default function SpaceGrid() {
         mt={rem(-20)}
       />
 
-      <Text fz="md" fw={500} mt="xs" className={classes.title}>
-        {space.name}
-      </Text>
+      <Group justify="space-between" align="center" mt="xs">
+        <Text fz="md" fw={500} className={classes.title}>
+          {space.name}
+        </Text>
+        {space.visibility === 'open' && (
+          <Text fz="xs" c="blue" fw={700} style={{ border: '1px solid #228be6', borderRadius: 4, padding: '0 6px' }}>
+            {t('Public')}
+          </Text>
+        )}
+      </Group>
 
       <Text c="dimmed" size="xs" fw={700} mt="md">
         {formatMemberCount(space.memberCount, t)}
@@ -55,6 +63,8 @@ export default function SpaceGrid() {
         <Text fz="sm" fw={500}>
           {t("Spaces you belong to")}
         </Text>
+        <CreateSpaceModal />
+        
       </Group>
 
       <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }}>{cards}</SimpleGrid>
