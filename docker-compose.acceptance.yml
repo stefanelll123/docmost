@@ -18,11 +18,16 @@ services:
       MAIL_FROM_ADDRESS: ipdocmost.noreply@gmail.com
       MAIL_FROM_NAME: IP Docmost
       FILE_UPLOAD_SIZE_LIMIT: 5mb
+      PLANTUML_SERVER_URL: 'http://plantuml:8080'
     ports:
       - "3000:3000"
     restart: unless-stopped
     volumes:
       - docmost:/app/data/storage
+
+  plantuml:
+    image: plantuml/plantuml-server:jetty
+    restart: unless-stopped
 
   db:
     image: postgres:18

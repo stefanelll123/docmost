@@ -19,6 +19,7 @@ import { TelemetryModule } from './integrations/telemetry/telemetry.module';
 import { RedisModule } from '@nestjs-labs/nestjs-ioredis';
 import { RedisConfigService } from './integrations/redis/redis-config.service';
 import { LoggerModule } from './common/logger/logger.module';
+import { PlantumlModule } from './integrations/plantuml/plantuml.module';
 
 const enterpriseModules = [];
 try {
@@ -59,6 +60,7 @@ try {
     EventEmitterModule.forRoot(),
     SecurityModule,
     TelemetryModule,
+    PlantumlModule,
     ...enterpriseModules,
   ],
   controllers: [AppController],

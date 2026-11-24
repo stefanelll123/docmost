@@ -12,6 +12,7 @@ import {
 import { useToggleSidebar } from "@/components/layouts/global/hooks/hooks/use-toggle-sidebar.ts";
 import SidebarToggle from "@/components/ui/sidebar-toggle-button.tsx";
 import { useTranslation } from "react-i18next";
+import useUserRole from "@/hooks/use-user-role.tsx";
 import useTrial from "@/ee/hooks/use-trial.tsx";
 import { isCloud } from "@/lib/config.ts";
 import {
@@ -25,6 +26,10 @@ import {
 import { NotificationPopover } from "@/features/notification/components/notification-popover.tsx";
 
 const links = [{ link: APP_ROUTE.HOME, label: "Home" }];
+const adminLinks = [
+  { link: APP_ROUTE.COORDINATED_SPACES, label: "Coordinated spaces" },
+];
+const ownerLinks = [{ link: APP_ROUTE.ALL_SPACES, label: "All spaces" }];
 
 export function AppHeader() {
   const { t } = useTranslation();
@@ -36,10 +41,18 @@ export function AppHeader() {
   const { isTrial, trialDaysLeft } = useTrial();
 
   const isHomeRoute = location.pathname.startsWith("/home");
-  const isSpacesRoute = location.pathname === "/spaces";
+  const isSpacesRoute = location.pathname === "/spaces" ||
+    location.pathname === "/all-spaces" ||
+    location.pathname === "/coordinated-spaces";
   const hideSidebar = isHomeRoute || isSpacesRoute;
 
-  const items = links.map((link) => (
+  const { isOwner, isAdmin } = useUserRole();
+
+  const items = [
+    ...links,
+    ...(isAdmin ? adminLinks : []),
+    ...(isOwner ? ownerLinks : []),
+  ].map((link) => (
     <Link key={link.label} to={link.link} className={classes.link}>
       {t(link.label)}
     </Link>

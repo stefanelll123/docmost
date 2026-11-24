@@ -266,6 +266,7 @@ export interface SpaceMembers {
 }
 
 export interface Spaces {
+  coordinatorId: string | null;
   createdAt: Generated<Timestamp>;
   creatorId: string | null;
   defaultRole: Generated<string>;

@@ -4,6 +4,7 @@ import {
   IChangeSpaceMemberRole,
   IExportSpaceParams,
   IRemoveSpaceMember,
+  ICoordinatorCandidate,
   ISpace,
   ISpaceMember,
 } from "@/features/space/types/space.types";
@@ -14,6 +15,29 @@ export async function getSpaces(
   params?: QueryParams,
 ): Promise<IPagination<ISpace>> {
   const req = await api.post("/spaces", params);
+  return req.data;
+}
+
+export async function getCoordinatorCandidates(): Promise<
+  ICoordinatorCandidate[]
+> {
+  const req = await api.post<ICoordinatorCandidate[]>(
+    "/spaces/coordinator-candidates",
+  );
+  return req.data;
+}
+
+export async function getAllWorkspaceSpaces(
+  params?: QueryParams,
+): Promise<IPagination<ISpace & { isMember: boolean }>> {
+  const req = await api.post("/spaces/all", params);
+  return req.data;
+}
+
+export async function getCoordinatedSpaces(
+  params?: QueryParams,
+): Promise<IPagination<ISpace>> {
+  const req = await api.post("/spaces/coordinated", params);
   return req.data;
 }
 

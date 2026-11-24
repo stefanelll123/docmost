@@ -140,6 +140,24 @@ export class UserRepo {
     return count as number;
   }
 
+  async getCoordinatorCandidates(workspaceId: string, query?: string) {
+    return this.db
+      .selectFrom('users')
+      .select(['id', 'name', 'email', 'avatarUrl', 'role'])
+      .where('workspaceId', '=', workspaceId)
+      .where('role', 'in', ['owner', 'admin'])
+      .where('deletedAt', 'is', null)
+      .where('deactivatedAt', 'is', null)
+      .$if(!!query, (qb) =>
+        qb.where((eb) =>
+          eb('name', 'ilike', `%${query}%`).or('email', 'ilike', `%${query}%`),
+        ),
+      )
+      .orderBy('name', 'asc')
+      .limit(100)
+      .execute();
+  }
+
   async getUsersPaginated(workspaceId: string, pagination: PaginationOptions) {
     let query = this.db
       .selectFrom('users')

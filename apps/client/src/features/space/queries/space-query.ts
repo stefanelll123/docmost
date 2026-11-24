@@ -8,6 +8,7 @@ import {
 import {
   IAddSpaceMember,
   IChangeSpaceMemberRole,
+  ICoordinatorCandidate,
   IRemoveSpaceMember,
   ISpace,
   ISpaceMember,
@@ -15,6 +16,9 @@ import {
 import {
   addSpaceMember,
   changeMemberRole,
+  getAllWorkspaceSpaces,
+  getCoordinatedSpaces,
+  getCoordinatorCandidates,
   getSpaceById,
   getSpaceMembers,
   getSpaces,
@@ -30,6 +34,37 @@ import { queryClient } from "@/main.tsx";
 import { getRecentChanges } from "@/features/page/services/page-service.ts";
 import { useEffect } from "react";
 import { validate as isValidUuid } from "uuid";
+
+export function useGetAllWorkspaceSpacesQuery(
+  params?: QueryParams,
+): UseQueryResult<IPagination<ISpace & { isMember: boolean }>, Error> {
+  return useQuery({
+    queryKey: ["all-workspace-spaces", params],
+    queryFn: () => getAllWorkspaceSpaces(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGetCoordinatedSpacesQuery(
+  params?: QueryParams,
+): UseQueryResult<IPagination<ISpace>, Error> {
+  return useQuery({
+    queryKey: ["coordinated-spaces", params],
+    queryFn: () => getCoordinatedSpaces(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useCoordinatorCandidatesQuery(): UseQueryResult<
+  ICoordinatorCandidate[],
+  Error
+> {
+  return useQuery({
+    queryKey: ["space-coordinator-candidates"],
+    queryFn: () => getCoordinatorCandidates(),
+    staleTime: 60 * 1000,
+  });
+}
 
 export function useGetSpacesQuery(
   params?: QueryParams,

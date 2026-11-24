@@ -7,6 +7,7 @@ import Page from "@/pages/page/page";
 import AccountSettings from "@/pages/settings/account/account-settings";
 import WorkspaceMembers from "@/pages/settings/workspace/workspace-members";
 import WorkspaceSettings from "@/pages/settings/workspace/workspace-settings";
+import AdminRoute from "@/components/settings/admin-route.tsx";
 import Groups from "@/pages/settings/group/groups";
 import GroupInfo from "./pages/settings/group/group-info";
 import Spaces from "@/pages/settings/space/spaces.tsx";
@@ -32,6 +33,8 @@ import ShareLayout from "@/features/share/components/share-layout.tsx";
 import ShareRedirect from "@/pages/share/share-redirect.tsx";
 import { useTrackOrigin } from "@/hooks/use-track-origin";
 import SpacesPage from "@/pages/spaces/spaces.tsx";
+import AllSpacesPage from "@/pages/spaces/all-spaces.tsx";
+import CoordinatedSpacesPage from "@/pages/spaces/coordinated-spaces.tsx";
 import { MfaChallengePage } from "@/ee/mfa/pages/mfa-challenge-page";
 import { MfaSetupRequiredPage } from "@/ee/mfa/pages/mfa-setup-required-page";
 import SpaceTrash from "@/pages/space/space-trash.tsx";
@@ -81,6 +84,11 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path={"/home"} element={<Home />} />
           <Route path={"/spaces"} element={<SpacesPage />} />
+          <Route path={"/all-spaces"} element={<AllSpacesPage />} />
+          <Route
+            path={"/coordinated-spaces"}
+            element={<CoordinatedSpacesPage />}
+          />
           <Route path={"/s/:spaceSlug"} element={<SpaceHome />} />
           <Route path={"/s/:spaceSlug/trash"} element={<SpaceTrash />} />
           <Route
@@ -95,11 +103,13 @@ export default function App() {
               element={<AccountPreferences />}
             />
             <Route path={"account/api-keys"} element={<UserApiKeys />} />
-            <Route path={"workspace"} element={<WorkspaceSettings />} />
-            <Route path={"members"} element={<WorkspaceMembers />} />
+            <Route element={<AdminRoute />}>
+              <Route path={"workspace"} element={<WorkspaceSettings />} />
+              <Route path={"members"} element={<WorkspaceMembers />} />
+              <Route path={"groups"} element={<Groups />} />
+              <Route path={"groups/:groupId"} element={<GroupInfo />} />
+            </Route>
             <Route path={"api-keys"} element={<WorkspaceApiKeys />} />
-            <Route path={"groups"} element={<Groups />} />
-            <Route path={"groups/:groupId"} element={<GroupInfo />} />
             <Route path={"spaces"} element={<Spaces />} />
             <Route path={"sharing"} element={<Shares />} />
             <Route path={"security"} element={<Security />} />

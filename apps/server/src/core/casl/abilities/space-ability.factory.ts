@@ -4,7 +4,7 @@ import {
   createMongoAbility,
   MongoAbility,
 } from '@casl/ability';
-import { SpaceRole } from '../../../common/helpers/types/permission';
+import { SpaceRole, UserRole } from '../../../common/helpers/types/permission';
 import { User } from '@docmost/db/types/entity.types';
 import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
 import {
@@ -21,6 +21,10 @@ export default class SpaceAbilityFactory {
     const userSpaceRoles = await this.spaceMemberRepo.getUserSpaceRoles(
       user.id,
       spaceId,
+      {
+        ownerWorkspaceId:
+          user.role === UserRole.OWNER ? user.workspaceId : undefined,
+      },
     );
 
     const userSpaceRole = findHighestUserSpaceRole(userSpaceRoles);

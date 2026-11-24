@@ -76,11 +76,17 @@ const groupedData: DataGroup[] = [
   {
     heading: "Workspace",
     items: [
-      { label: "General", icon: IconSettings, path: "/settings/workspace" },
+      {
+        label: "General",
+        icon: IconSettings,
+        path: "/settings/workspace",
+        isAdmin: true,
+      },
       {
         label: "Members",
         icon: IconUsers,
         path: "/settings/members",
+        isAdmin: true,
       },
       {
         label: "Billing",
@@ -98,7 +104,12 @@ const groupedData: DataGroup[] = [
         isAdmin: true,
         showDisabledInNonEE: true,
       },
-      { label: "Groups", icon: IconUsersGroup, path: "/settings/groups" },
+      {
+        label: "Groups",
+        icon: IconUsersGroup,
+        path: "/settings/groups",
+        isAdmin: true,
+      },
       { label: "Spaces", icon: IconSpaces, path: "/settings/spaces" },
       { label: "Public sharing", icon: IconWorld, path: "/settings/sharing" },
       {

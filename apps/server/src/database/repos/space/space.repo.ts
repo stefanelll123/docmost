@@ -124,6 +124,7 @@ export class SpaceRepo {
   async getSpacesInWorkspace(
     workspaceId: string,
     pagination: PaginationOptions,
+    filter?: { coordinatorId?: string; withoutCoordinator?: boolean },
   ) {
     // todo: show spaces user have access based on visibility and memberships
     let query = this.db
@@ -131,6 +132,12 @@ export class SpaceRepo {
       .selectAll('spaces')
       .select((eb) => [this.withMemberCount(eb)])
       .where('workspaceId', '=', workspaceId);
+
+    if (filter?.withoutCoordinator) {
+      query = query.where('coordinatorId', 'is', null);
+    } else if (filter?.coordinatorId) {
+      query = query.where('coordinatorId', '=', filter.coordinatorId);
+    }
 
     if (pagination.query) {
       query = query.where((eb) =>

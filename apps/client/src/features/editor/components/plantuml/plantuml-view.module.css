@@ -1,0 +1,113 @@
+.container {
+    border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+    border-radius: var(--mantine-radius-md);
+    overflow: hidden;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mantine-spacing-xs);
+    padding: 4px 8px;
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+
+    @media print {
+        display: none;
+    }
+}
+
+.panes {
+    display: flex;
+    min-height: 160px;
+
+    @media (max-width: 48em) {
+        flex-direction: column;
+    }
+}
+
+.pane {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.pane + .pane {
+    border-left: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+
+    @media (max-width: 48em) {
+        border-left: none;
+        border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+    }
+}
+
+.code {
+    width: 100%;
+    height: 100%;
+    min-height: 160px;
+    resize: vertical;
+    border: none;
+    outline: none;
+    padding: var(--mantine-spacing-xs);
+    font-family: var(--mantine-font-family-monospace);
+    font-size: var(--mantine-font-size-sm);
+    line-height: 1.5;
+    color: inherit;
+    background: transparent;
+    tab-size: 2;
+}
+
+.preview {
+    display: flex;
+    align-items: center;
+    padding: var(--mantine-spacing-xs);
+    overflow: hidden;
+    background-color: #fff;
+    color: #000;
+}
+
+.preview > * {
+    width: 100%;
+}
+
+/* fill the available width; height follows the viewBox so the aspect ratio is kept */
+.preview svg {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    max-width: none;
+}
+
+.message {
+    padding: var(--mantine-spacing-md);
+    text-align: center;
+}
+
+.codeReadOnly {
+    margin: 0;
+    padding: var(--mantine-spacing-xs);
+    overflow: auto;
+    font-family: var(--mantine-font-family-monospace);
+    font-size: var(--mantine-font-size-sm);
+    white-space: pre;
+}
+
+.preview svg {
+    cursor: zoom-in;
+}
+
+.fullscreen {
+    display: flex;
+    overflow: auto;
+    height: calc(100vh - 100px);
+    width: fit-content;
+    background-color: #fff;
+    color: #000;
+}
+
+.fullscreen > svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: auto;
+}

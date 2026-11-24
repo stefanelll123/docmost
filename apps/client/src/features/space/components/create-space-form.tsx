@@ -8,6 +8,7 @@ import { useCreateSpaceMutation } from "@/features/space/queries/space-query.ts"
 import { computeSpaceSlug } from "@/lib";
 import { getSpaceUrl } from "@/lib/config.ts";
 import { useTranslation } from "react-i18next";
+import { CoordinatorSelect } from "@/features/space/components/coordinator-select.tsx";
 
 const formSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -21,6 +22,7 @@ const formSchema = z.object({
       "Space slug must be alphanumeric. No special characters",
     ),
   description: z.string().max(500),
+  coordinatorId: z.string().nullable().optional(),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -36,6 +38,7 @@ export function CreateSpaceForm() {
       name: "",
       slug: "",
       description: "",
+      coordinatorId: null,
     },
   });
 
@@ -58,11 +61,13 @@ export function CreateSpaceForm() {
     name?: string;
     slug?: string;
     description?: string;
+    coordinatorId?: string | null;
   }) => {
     const spaceData = {
       name: data.name,
       slug: data.slug,
       description: data.description,
+      coordinatorId: data.coordinatorId || undefined,
     };
 
     const createdSpace = await createSpaceMutation.mutateAsync(spaceData);
@@ -101,6 +106,12 @@ export function CreateSpaceForm() {
               minRows={2}
               maxRows={8}
               {...form.getInputProps("description")}
+            />
+
+            <CoordinatorSelect
+              id="coordinator"
+              clearable
+              {...form.getInputProps("coordinatorId")}
             />
           </Stack>
 

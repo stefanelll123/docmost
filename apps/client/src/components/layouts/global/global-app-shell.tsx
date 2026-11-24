@@ -73,7 +73,10 @@ export default function GlobalAppShell({
   const isSettingsRoute = location.pathname.startsWith("/settings");
   const isSpaceRoute = location.pathname.startsWith("/s/");
   const isHomeRoute = location.pathname.startsWith("/home");
-  const isSpacesRoute = location.pathname === "/spaces";
+  const isSpacesRoute =
+    location.pathname === "/spaces" ||
+    location.pathname === "/all-spaces" ||
+    location.pathname === "/coordinated-spaces";
   const isPageRoute = location.pathname.includes("/p/");
   const hideSidebar = isHomeRoute || isSpacesRoute;
 

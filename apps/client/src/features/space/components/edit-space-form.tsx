@@ -6,6 +6,7 @@ import { useUpdateSpaceMutation } from "@/features/space/queries/space-query.ts"
 import { ISpace } from "@/features/space/types/space.types.ts";
 import { useTranslation } from "react-i18next";
 import useUserRole from "@/hooks/use-user-role.tsx";
+import { CoordinatorSelect } from "@/features/space/components/coordinator-select.tsx";
 
 const formSchema = z.object({
   name: z.string().min(2).max(100),
@@ -19,6 +20,7 @@ const formSchema = z.object({
       "Space slug must be alphanumeric. No special characters",
     ),
   visibility: z.enum(["open", "private"]).optional(),
+  coordinatorId: z.string().nullable().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -39,6 +41,7 @@ export function EditSpaceForm({ space, readOnly }: EditSpaceFormProps) {
       description: space?.description || "",
       slug: space.slug,
       visibility: space.visibility ?? "private",
+      coordinatorId: space.coordinatorId ?? null,
     },
   });
 
@@ -47,6 +50,7 @@ export function EditSpaceForm({ space, readOnly }: EditSpaceFormProps) {
     description?: string;
     slug?: string;
     visibility?: "open" | "private";
+    coordinatorId?: string | null;
   }) => {
     const spaceData: Partial<ISpace> = {
       spaceId: space.id,
@@ -62,6 +66,9 @@ export function EditSpaceForm({ space, readOnly }: EditSpaceFormProps) {
     }
     if (form.isDirty("visibility")) {
       spaceData.visibility = values.visibility;
+    }
+    if (form.isDirty("coordinatorId") && values.coordinatorId) {
+      spaceData.coordinatorId = values.coordinatorId;
     }
     await updateSpaceMutation.mutateAsync(spaceData);
     form.resetDirty();
@@ -99,6 +106,13 @@ export function EditSpaceForm({ space, readOnly }: EditSpaceFormProps) {
               minRows={1}
               maxRows={3}
               {...form.getInputProps("description")}
+            />
+
+            <CoordinatorSelect
+              id="coordinator"
+              readOnly={readOnly}
+              disabled={readOnly}
+              {...form.getInputProps("coordinatorId")}
             />
 
             {isOwner && (

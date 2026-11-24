@@ -10,7 +10,7 @@ import { UserRepo } from '@docmost/db/repos/user/user.repo';
 import { PageRepo } from '@docmost/db/repos/page/page.repo';
 import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
 import { findHighestUserSpaceRole } from '@docmost/db/repos/space/utils';
-import { SpaceRole } from '../../common/helpers/types/permission';
+import { SpaceRole, UserRole } from '../../common/helpers/types/permission';
 import { getPageId } from '../collaboration.util';
 import { JwtCollabPayload, JwtType } from '../../core/auth/dto/jwt-payload';
 
@@ -59,6 +59,10 @@ export class AuthenticationExtension implements Extension {
     const userSpaceRoles = await this.spaceMemberRepo.getUserSpaceRoles(
       user.id,
       page.spaceId,
+      {
+        ownerWorkspaceId:
+          user.role === UserRole.OWNER ? user.workspaceId : undefined,
+      },
     );
 
     const userSpaceRole = findHighestUserSpaceRole(userSpaceRoles);

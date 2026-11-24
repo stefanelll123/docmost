@@ -21,6 +21,7 @@ import {
 import { useAtom } from "jotai";
 import { currentUserAtom } from "@/features/user/atoms/current-user-atom.ts";
 import { Link } from "react-router-dom";
+import useUserRole from "@/hooks/use-user-role.tsx";
 import APP_ROUTE from "@/lib/app-route.ts";
 import useAuth from "@/features/auth/hooks/use-auth.ts";
 import { CustomAvatar } from "@/components/ui/custom-avatar.tsx";
@@ -31,6 +32,7 @@ export default function TopMenu() {
   const { t } = useTranslation();
   const [currentUser] = useAtom(currentUserAtom);
   const { logout } = useAuth();
+  const { isAdmin } = useUserRole();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   const user = currentUser?.user;
@@ -60,25 +62,29 @@ export default function TopMenu() {
         </UnstyledButton>
       </Menu.Target>
       <Menu.Dropdown>
-        <Menu.Label>{t("Workspace")}</Menu.Label>
+        {isAdmin && (
+          <>
+            <Menu.Label>{t("Workspace")}</Menu.Label>
 
-        <Menu.Item
-          component={Link}
-          to={APP_ROUTE.SETTINGS.WORKSPACE.GENERAL}
-          leftSection={<IconSettings size={16} />}
-        >
-          {t("Workspace settings")}
-        </Menu.Item>
+            <Menu.Item
+              component={Link}
+              to={APP_ROUTE.SETTINGS.WORKSPACE.GENERAL}
+              leftSection={<IconSettings size={16} />}
+            >
+              {t("Workspace settings")}
+            </Menu.Item>
 
-        <Menu.Item
-          component={Link}
-          to={APP_ROUTE.SETTINGS.WORKSPACE.MEMBERS}
-          leftSection={<IconUsers size={16} />}
-        >
-          {t("Manage members")}
-        </Menu.Item>
+            <Menu.Item
+              component={Link}
+              to={APP_ROUTE.SETTINGS.WORKSPACE.MEMBERS}
+              leftSection={<IconUsers size={16} />}
+            >
+              {t("Manage members")}
+            </Menu.Item>
 
-        <Menu.Divider />
+            <Menu.Divider />
+          </>
+        )}
 
         <Menu.Label>{t("Account")}</Menu.Label>
         <Menu.Item component={Link} to={APP_ROUTE.SETTINGS.ACCOUNT.PROFILE}>

@@ -2,6 +2,7 @@ import {
   IsAlphanumeric,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -22,4 +23,8 @@ export class CreateSpaceDto {
   @MaxLength(100)
   @IsAlphanumeric()
   slug: string;
+
+  @IsOptional()
+  @IsUUID()
+  coordinatorId?: string;
 }

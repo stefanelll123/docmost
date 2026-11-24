@@ -203,6 +203,7 @@ export class SpaceMemberRepo {
   async getUserSpaceRoles(
     userId: string,
     spaceId: string,
+    opts?: { ownerWorkspaceId?: string },
   ): Promise<UserSpaceRole[]> {
     const roles = await this.db
       .selectFrom('spaceMembers')
@@ -223,10 +224,18 @@ export class SpaceMemberRepo {
       // Check if space is open
       const space = await this.db
         .selectFrom('spaces')
-        .select(['visibility'])
+        .select(['visibility', 'workspaceId'])
         .where('id', '=', spaceId)
         .executeTakeFirst();
       if (space && space.visibility === SpaceVisibility.OPEN) {
+        return [{ userId, role: SpaceRole.READER }];
+      }
+      // workspace owners get a virtual read-only role on every space in their workspace
+      if (
+        space &&
+        opts?.ownerWorkspaceId &&
+        space.workspaceId === opts.ownerWorkspaceId
+      ) {
         return [{ userId, role: SpaceRole.READER }];
       }
       return undefined;

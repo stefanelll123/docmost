@@ -33,6 +33,7 @@ import {
   Attachment,
   CustomCodeBlock,
   Drawio,
+  Plantuml,
   Excalidraw,
   Embed,
   SearchAndReplace,
@@ -57,6 +58,7 @@ import VideoView from "@/features/editor/components/video/video-view.tsx";
 import AttachmentView from "@/features/editor/components/attachment/attachment-view.tsx";
 import CodeBlockView from "@/features/editor/components/code-block/code-block-view.tsx";
 import DrawioView from "../components/drawio/drawio-view";
+import PlantumlView from "../components/plantuml/plantuml-view";
 import ExcalidrawView from "@/features/editor/components/excalidraw/excalidraw-view.tsx";
 import EmbedView from "@/features/editor/components/embed/embed-view.tsx";
 import SubpagesView from "@/features/editor/components/subpages/subpages-view.tsx";
@@ -221,6 +223,9 @@ export const mainExtensions = [
   }),
   Drawio.configure({
     view: DrawioView,
+  }),
+  Plantuml.configure({
+    view: PlantumlView,
   }),
   Excalidraw.configure({
     view: ExcalidrawView,

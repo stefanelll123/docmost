@@ -31,6 +31,7 @@ import { uploadAttachmentAction } from "@/features/editor/components/attachment/
 import IconExcalidraw from "@/components/icons/icon-excalidraw";
 import IconMermaid from "@/components/icons/icon-mermaid";
 import IconDrawio from "@/components/icons/icon-drawio";
+import IconPlantuml from "@/components/icons/icon-plantuml";
 import {
   AirtableIcon,
   FigmaIcon,
@@ -344,6 +345,14 @@ const CommandGroups: SlashMenuGroupedItemsType = {
           .setCodeBlock({ language: "mermaid" })
           .insertContent("flowchart LR\n" + "    A --> B")
           .run(),
+    },
+    {
+      title: "PlantUML diagram",
+      description: "Write PlantUML code and see the diagram",
+      searchTerms: ["plantuml", "uml", "diagram", "sequence", "class"],
+      icon: IconPlantuml,
+      command: ({ editor, range }: CommandProps) =>
+        editor.chain().focus().deleteRange(range).setPlantuml().run(),
     },
     {
       title: "Draw.io (diagrams.net) ",

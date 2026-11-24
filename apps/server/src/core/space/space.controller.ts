@@ -25,7 +25,7 @@ import {
   SpaceCaslAction,
   SpaceCaslSubject,
 } from '../casl/interfaces/space-ability.type';
-import { SpaceVisibility } from '../../common/helpers/types/permission';
+import { SpaceVisibility, UserRole } from '../../common/helpers/types/permission';
 import { UpdateSpaceDto } from './dto/update-space.dto';
 import { findHighestUserSpaceRole } from '@docmost/db/repos/space/utils';
 import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
@@ -34,7 +34,9 @@ import {
   WorkspaceCaslSubject,
 } from '../casl/interfaces/workspace-ability.type';
 import WorkspaceAbilityFactory from '../casl/abilities/workspace-ability.factory';
+import { UserRepo } from '@docmost/db/repos/user/user.repo';
 import { CreateSpaceDto } from './dto/create-space.dto';
+import { AllSpacesDto, NO_COORDINATOR } from './dto/all-spaces.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('spaces')
@@ -43,6 +45,7 @@ export class SpaceController {
     private readonly spaceService: SpaceService,
     private readonly spaceMemberService: SpaceMemberService,
     private readonly spaceMemberRepo: SpaceMemberRepo,
+    private readonly userRepo: UserRepo,
     private readonly spaceAbility: SpaceAbilityFactory,
     private readonly workspaceAbility: WorkspaceAbilityFactory,
   ) {}
@@ -55,6 +58,65 @@ export class SpaceController {
     @AuthUser() user: User,
   ) {
     return this.spaceMemberService.getUserSpaces(user.id, pagination);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('all')
+  async getAllWorkspaceSpaces(
+    @Body() dto: AllSpacesDto,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    if (user.role !== UserRole.OWNER) {
+      throw new ForbiddenException();
+    }
+
+    const { coordinatorId, ...pagination } = dto;
+    const filter =
+      coordinatorId === NO_COORDINATOR
+        ? { withoutCoordinator: true }
+        : coordinatorId
+          ? { coordinatorId }
+          : undefined;
+
+    const [result, memberSpaceIds] = await Promise.all([
+      this.spaceService.getWorkspaceSpaces(workspace.id, pagination, filter),
+      this.spaceMemberRepo.getUserSpaceIds(user.id),
+    ]);
+    const memberIds = new Set(memberSpaceIds);
+
+    return {
+      ...result,
+      items: result.items.map((space) => ({
+        ...space,
+        isMember: memberIds.has(space.id),
+      })),
+    };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('coordinated')
+  async getCoordinatedSpaces(
+    @Body() pagination: PaginationOptions,
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    return this.spaceService.getWorkspaceSpaces(workspace.id, pagination, {
+      coordinatorId: user.id,
+    });
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('coordinator-candidates')
+  async getCoordinatorCandidates(
+    @Body('query') query: string,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    return this.userRepo.getCoordinatorCandidates(workspace.id, query);
   }
 
   @HttpCode(HttpStatus.OK)
@@ -81,6 +143,10 @@ export class SpaceController {
     const userSpaceRoles = await this.spaceMemberRepo.getUserSpaceRoles(
       user.id,
       space.id,
+      {
+        ownerWorkspaceId:
+          user.role === UserRole.OWNER ? user.workspaceId : undefined,
+      },
     );
 
     const userSpaceRole = findHighestUserSpaceRole(userSpaceRoles);

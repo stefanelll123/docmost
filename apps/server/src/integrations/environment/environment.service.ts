@@ -165,6 +165,13 @@ export class EnvironmentService {
     return this.configService.get<string>('DRAWIO_URL');
   }
 
+  getPlantumlServerUrl(): string {
+    return this.configService.get<string>(
+      'PLANTUML_SERVER_URL',
+      'http://localhost:8080',
+    );
+  }
+
   isCloud(): boolean {
     const cloudConfig = this.configService
       .get<string>('CLOUD', 'false')

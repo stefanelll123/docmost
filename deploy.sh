@@ -21,8 +21,12 @@ fi
 IMAGE_VERSIONED="${REPO}:${TAG_VALUE}"
 IMAGE_LATEST="${REPO}:latest"
 
-echo "==> Building ${IMAGE_VERSIONED} (and tagging ${IMAGE_LATEST})"
-docker build \
+PLATFORM="${PLATFORM:-linux/amd64}"
+
+echo "==> Building ${IMAGE_VERSIONED} for ${PLATFORM} (and tagging ${IMAGE_LATEST})"
+docker buildx build \
+  --platform "${PLATFORM}" \
+  --load \
   -f "${DOCKERFILE}" \
   -t "${IMAGE_VERSIONED}" \
   -t "${IMAGE_LATEST}" \

@@ -21,6 +21,7 @@ export interface ISpace {
   slug: string;
   hostname: string;
   creatorId: string;
+  coordinatorId?: string | null;
   createdAt: Date;
   updatedAt: Date;
   memberCount?: number;
@@ -86,4 +87,12 @@ export interface IExportSpaceParams {
   spaceId: string;
   format: ExportFormat;
   includeAttachments?: boolean;
+}
+
+export interface ICoordinatorCandidate {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  role: string;
 }

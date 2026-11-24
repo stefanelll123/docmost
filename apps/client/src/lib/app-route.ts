@@ -1,6 +1,8 @@
 const APP_ROUTE = {
   HOME: "/home",
   SPACES: "/spaces",
+  ALL_SPACES: "/all-spaces",
+  COORDINATED_SPACES: "/coordinated-spaces",
   SEARCH: "/search",
   AUTH: {
     LOGIN: "/login",

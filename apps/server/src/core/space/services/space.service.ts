@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateSpaceDto } from '../dto/create-space.dto';
@@ -21,18 +22,117 @@ import { CursorPaginationResult } from '@docmost/db/pagination/cursor-pagination
 import { ShareRepo } from '@docmost/db/repos/share/share.repo';
 import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
 import { LicenseCheckService } from '../../../integrations/environment/license-check.service';
+import { UserRepo } from '@docmost/db/repos/user/user.repo';
+import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
+import { MailService } from '../../../integrations/mail/mail.service';
+import { DomainService } from '../../../integrations/environment/domain.service';
+import { UserRole } from '../../../common/helpers/types/permission';
+import SpaceCoordinatorAssignedEmail from '@docmost/transactional/emails/space-coordinator-assigned-email';
+import SpaceCoordinatorRemovedEmail from '@docmost/transactional/emails/space-coordinator-removed-email';
 
 @Injectable()
 export class SpaceService {
+  private readonly logger = new Logger(SpaceService.name);
+
   constructor(
     private spaceRepo: SpaceRepo,
     private spaceMemberService: SpaceMemberService,
+    private spaceMemberRepo: SpaceMemberRepo,
     private shareRepo: ShareRepo,
     private workspaceRepo: WorkspaceRepo,
+    private userRepo: UserRepo,
+    private mailService: MailService,
+    private domainService: DomainService,
     private licenseCheckService: LicenseCheckService,
     @InjectKysely() private readonly db: KyselyDB,
     @InjectQueue(QueueName.ATTACHMENT_QUEUE) private attachmentQueue: Queue,
   ) {}
+
+  private async validateCoordinator(
+    coordinatorId: string,
+    workspaceId: string,
+    trx?: KyselyTransaction,
+  ): Promise<User> {
+    const coordinator = await this.userRepo.findById(
+      coordinatorId,
+      workspaceId,
+      { trx },
+    );
+
+    if (
+      !coordinator ||
+      coordinator.deletedAt ||
+      coordinator.deactivatedAt ||
+      (coordinator.role !== UserRole.ADMIN &&
+        coordinator.role !== UserRole.OWNER)
+    ) {
+      throw new BadRequestException(
+        'Coordinator must be an active workspace admin or owner',
+      );
+    }
+
+    return coordinator;
+  }
+
+  // grants the coordinator full access, upgrading an existing membership if any
+  private async grantCoordinatorAccess(
+    userId: string,
+    spaceId: string,
+    workspaceId: string,
+    trx: KyselyTransaction,
+  ): Promise<void> {
+    const existing = await this.spaceMemberRepo.getSpaceMemberByTypeId(
+      spaceId,
+      { userId },
+      trx,
+    );
+
+    if (!existing) {
+      await this.spaceMemberService.addUserToSpace(
+        userId,
+        spaceId,
+        SpaceRole.ADMIN,
+        workspaceId,
+        trx,
+      );
+    } else if (existing.role !== SpaceRole.ADMIN) {
+      await trx
+        .updateTable('spaceMembers')
+        .set({ role: SpaceRole.ADMIN })
+        .where('id', '=', existing.id)
+        .execute();
+    }
+  }
+
+  private async sendCoordinatorEmail(
+    user: User,
+    space: Space,
+    workspaceId: string,
+    assigned: boolean,
+  ): Promise<void> {
+    try {
+      const workspace = await this.workspaceRepo.findById(workspaceId);
+      const spaceUrl = `${this.domainService.getUrl(workspace?.hostname)}/s/${space.slug}`;
+
+      await this.mailService.sendToQueue({
+        to: user.email,
+        subject: assigned
+          ? `You are now the coordinator of ${space.name}`
+          : `You are no longer the coordinator of ${space.name}`,
+        template: assigned
+          ? SpaceCoordinatorAssignedEmail({
+              spaceName: space.name,
+              spaceUrl,
+            })
+          : SpaceCoordinatorRemovedEmail({ spaceName: space.name }),
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to send coordinator email to ${user.id}`,
+        err as Error,
+      );
+    }
+  }
 
   async createSpace(
     authUser: User,
@@ -41,10 +141,20 @@ export class SpaceService {
     trx?: KyselyTransaction,
   ): Promise<Space> {
     let space = null;
+    let coordinator: User | null = null;
+    let memberCount = 1;
 
     await executeTx(
       this.db,
       async (trx) => {
+        if (createSpaceDto.coordinatorId) {
+          coordinator = await this.validateCoordinator(
+            createSpaceDto.coordinatorId,
+            workspaceId,
+            trx,
+          );
+        }
+
         space = await this.create(
           authUser.id,
           workspaceId,
@@ -59,11 +169,26 @@ export class SpaceService {
           workspaceId,
           trx,
         );
+
+        if (coordinator && coordinator.id !== authUser.id) {
+          await this.grantCoordinatorAccess(
+            coordinator.id,
+            space.id,
+            workspaceId,
+            trx,
+          );
+          memberCount = 2;
+        }
       },
       trx,
     );
 
-    return { ...space, memberCount: 1 };
+    // the coordinator is notified when someone else assigned them
+    if (coordinator && coordinator.id !== authUser.id) {
+      await this.sendCoordinatorEmail(coordinator, space, workspaceId, true);
+    }
+
+    return { ...space, memberCount };
   }
 
   async create(
@@ -90,6 +215,7 @@ export class SpaceService {
         creatorId: userId,
         workspaceId: workspaceId,
         slug: createSpaceDto.slug,
+        coordinatorId: createSpaceDto.coordinatorId ?? null,
       },
       trx,
     );
@@ -137,16 +263,97 @@ export class SpaceService {
       }
     }
 
-    return await this.spaceRepo.updateSpace(
-      {
-        name: updateSpaceDto.name,
-        description: updateSpaceDto.description,
-        slug: updateSpaceDto.slug,
-        visibility: updateSpaceDto.visibility,
-      },
+    const existingSpace = await this.spaceRepo.findById(
       updateSpaceDto.spaceId,
       workspaceId,
     );
+    if (!existingSpace) {
+      throw new NotFoundException('Space not found');
+    }
+
+    const oldCoordinatorId = existingSpace.coordinatorId;
+    const newCoordinatorId = updateSpaceDto.coordinatorId;
+    const coordinatorChanged =
+      !!newCoordinatorId && newCoordinatorId !== oldCoordinatorId;
+
+    let newCoordinator: User | null = null;
+    let oldCoordinator: User | null = null;
+
+    const updatedSpace = await executeTx(this.db, async (trx) => {
+      if (coordinatorChanged) {
+        newCoordinator = await this.validateCoordinator(
+          newCoordinatorId,
+          workspaceId,
+          trx,
+        );
+
+        await this.grantCoordinatorAccess(
+          newCoordinator.id,
+          existingSpace.id,
+          workspaceId,
+          trx,
+        );
+
+        // the creator keeps their own membership
+        if (oldCoordinatorId && oldCoordinatorId !== existingSpace.creatorId) {
+          oldCoordinator = await this.userRepo.findById(
+            oldCoordinatorId,
+            workspaceId,
+            { trx },
+          );
+          const oldMember = await this.spaceMemberRepo.getSpaceMemberByTypeId(
+            existingSpace.id,
+            { userId: oldCoordinatorId },
+            trx,
+          );
+          if (oldMember) {
+            await this.spaceMemberRepo.removeSpaceMemberById(
+              oldMember.id,
+              existingSpace.id,
+              { trx },
+            );
+          }
+        } else if (oldCoordinatorId) {
+          oldCoordinator = await this.userRepo.findById(
+            oldCoordinatorId,
+            workspaceId,
+            { trx },
+          );
+        }
+      }
+
+      return this.spaceRepo.updateSpace(
+        {
+          name: updateSpaceDto.name,
+          description: updateSpaceDto.description,
+          slug: updateSpaceDto.slug,
+          visibility: updateSpaceDto.visibility,
+          ...(coordinatorChanged ? { coordinatorId: newCoordinatorId } : {}),
+        },
+        updateSpaceDto.spaceId,
+        workspaceId,
+        trx,
+      );
+    });
+
+    if (coordinatorChanged) {
+      await this.sendCoordinatorEmail(
+        newCoordinator,
+        updatedSpace,
+        workspaceId,
+        true,
+      );
+      if (oldCoordinator) {
+        await this.sendCoordinatorEmail(
+          oldCoordinator,
+          updatedSpace,
+          workspaceId,
+          false,
+        );
+      }
+    }
+
+    return updatedSpace;
   }
 
   async getSpaceInfo(spaceId: string, workspaceId: string): Promise<Space> {
@@ -163,8 +370,13 @@ export class SpaceService {
   async getWorkspaceSpaces(
     workspaceId: string,
     pagination: PaginationOptions,
+    filter?: { coordinatorId?: string; withoutCoordinator?: boolean },
   ): Promise<CursorPaginationResult<Space>> {
-    return this.spaceRepo.getSpacesInWorkspace(workspaceId, pagination);
+    return this.spaceRepo.getSpacesInWorkspace(
+      workspaceId,
+      pagination,
+      filter,
+    );
   }
 
   async deleteSpace(spaceId: string, workspaceId: string): Promise<void> {
